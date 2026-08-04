@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>家教薪資計算器</title>
+  <style>
+    :root {
+      --bg1: #f4f1ff;
+      --bg2: #fff5f8;
+      --card: rgba(255,255,255,.96);
+      --text: #25233a;
+      --muted: #74718a;
+      --primary: #7357d8;
+      --primary-soft: #eee9ff;
+      --border: #e8e4f1;
+      --danger: #d9465f;
+      --success: #168967;
+      --shadow: 0 18px 45px rgba(66, 48, 112, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      padding: 24px;
+    }
+
+    .container {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 5vw, 42px);
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .toolbar,
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      padding: 16px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: end;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar .field {
+      min-width: 190px;
+      flex: 1;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      padding: 20px;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 21px;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 15px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button.primary {
+      color: white;
+      background: var(--primary);
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: #f2f0f6;
+    }
+
+    button.danger {
+      color: var(--danger);
+      background: #fff0f3;
+    }
+
+    button.small {
+      padding: 8px 11px;
+      font-size: 13px;
+    }
+
+    .student-form-actions,
+    .lesson-actions,
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .student-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .student-item {
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 13px;
+      background: #fbfaff;
+    }
+
+    .student-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .student-name {
+      font-weight: 900;
+      font-size: 17px;
+    }
+
+    .student-rate {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 14px;
+    }
+
+    .student-total {
+      margin-top: 10px;
+      color: var(--success);
+      font-weight: 900;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 20px 8px;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .month-total {
+      background: #edfff8;
+      color: var(--success);
+      border: 1px solid #bcead9;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .weekday {
+      text-align: center;
+      font-weight: 800;
+      color: var(--muted);
+      padding: 8px 0;
+    }
+
+    .day {
+      min-height: 105px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: white;
+      padding: 8px;
+      cursor: pointer;
+      transition: .15s;
+      overflow: hidden;
+    }
+
+    .day:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .day.empty-day {
+      opacity: .35;
+      cursor: default;
+      background: #f8f7fb;
+    }
+
+    .day-number {
+      font-weight: 900;
+      margin-bottom: 7px;
+    }
+
+    .lesson-chip {
+      background: var(--primary-soft);
+      color: #4c379c;
+      border-radius: 9px;
+      padding: 5px 7px;
+      margin-top: 5px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .lesson-count {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 5px;
+    }
+
+    .summary {
+      margin-top: 18px;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .summary-table th,
+    .summary-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .summary-table th:last-child,
+    .summary-table td:last-child {
+      text-align: right;
+    }
+
+    .summary-table th {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 20, 47, .45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 100;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(500px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 24px 70px rgba(25,20,45,.25);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .close-btn {
+      background: #f1eff5;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    .lesson-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .lesson-row {
+      background: #faf9fd;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 11px;
+    }
+
+    .lesson-row-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .lesson-detail {
+      color: var(--muted);
+      margin-top: 5px;
+      font-size: 14px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 850px) {
+      body { padding: 12px; }
+      .layout { grid-template-columns: 1fr; }
+      .calendar { gap: 5px; }
+      .day { min-height: 82px; padding: 6px; }
+      .lesson-chip { padding: 4px 5px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <h1>📚 家教薪資計算器</h1>
+      <p>管理不同學生的時薪，點日期登記上課時間，自動統計本月薪資。</p>
+    </section>
+
+    <section class="toolbar">
+      <div class="field" style="margin:0">
+        <label for="monthPicker">查看月份</label>
+        <input id="monthPicker" type="month" />
+      </div>
+      <div class="top-actions">
+        <button class="secondary" id="prevMonth">← 上個月</button>
+        <button class="secondary" id="nextMonth">下個月 →</button>
+        <button class="danger" id="clearMonth">清除本月紀錄</button>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="card">
+        <h2>學生管理</h2>
+
+        <div class="field">
+          <label for="studentName">學生名稱</label>
+          <input id="studentName" placeholder="例如：S學生" />
+        </div>
+
+        <div class="field">
+          <label for="studentRate">時薪（元）</label>
+          <input id="studentRate" type="number" min="0" step="1" placeholder="例如：750" />
+        </div>
+
+        <div class="student-form-actions">
+          <button class="primary" id="addStudent">新增學生</button>
+        </div>
+
+        <div class="student-list" id="studentList"></div>
+
+        <p class="hint">
+          學生資料與上課紀錄只會儲存在這台裝置的瀏覽器中，不會上傳。
+        </p>
+      </aside>
+
+      <section>
+        <div class="card">
+          <div class="calendar-header">
+            <h2 id="calendarTitle">本月課程</h2>
+            <div class="month-total">本月總薪資：<span id="monthTotal">$0</span></div>
+          </div>
+
+          <div class="calendar" id="calendar"></div>
+        </div>
+
+        <div class="card summary">
+          <h2>本月學生薪資統計</h2>
+          <div id="summaryWrap"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="lessonModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2 style="margin:0">登記上課</h2>
+          <div id="selectedDateText" class="hint" style="margin-top:4px"></div>
+        </div>
+        <button class="close-btn" id="closeModal">✕</button>
+      </div>
+
+      <div id="dayLessonList" class="lesson-list"></div>
+
+      <h3>新增一筆課程</h3>
+
+      <div class="field">
+        <label for="lessonStudent">學生</label>
+        <select id="lessonStudent"></select>
+      </div>
+
+      <div class="field">
+        <label for="startTime">上課時間</label>
+        <input id="startTime" type="time" value="18:00" />
+      </div>
+
+      <div class="field">
+        <label for="endTime">下課時間</label>
+        <input id="endTime" type="time" value="20:00" />
+      </div>
+
+      <div class="lesson-actions">
+        <button class="primary" id="saveLesson">加入課程</button>
+      </div>
+
+      <p class="hint">
+        薪資會依「實際分鐘數 ÷ 60 × 學生時薪」計算，例如時薪 750 元，上課 1.5 小時就是 1,125 元。
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "tutorSalaryCalculatorV2";
+
+    let state = {
+      students: [],
+      lessons: []
+    };
+
+    let selectedDate = "";
+
+    const money = value =>
+      new Intl.NumberFormat("zh-TW", {
+        style: "currency",
+        currency: "TWD",
+        maximumFractionDigits: 0
+      }).format(Math.round(value));
+
+    const pad = value => String(value).padStart(2, "0");
+
+    function todayMonth() {
+      const now = new Date();
+      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.students)) state.students = parsed.students;
+        if (Array.isArray(parsed.lessons)) state.lessons = parsed.lessons;
+      } catch (error) {
+        console.error("資料讀取失敗", error);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function getSelectedMonth() {
+      return document.getElementById("monthPicker").value || todayMonth();
+    }
+
+    function getStudent(studentId) {
+      return state.students.find(student => student.id === studentId);
+    }
+
+    function lessonDurationHours(lesson) {
+      const [sh, sm] = lesson.start.split(":").map(Number);
+      const [eh, em] = lesson.end.split(":").map(Number);
+      const startMinutes = sh * 60 + sm;
+      const endMinutes = eh * 60 + em;
+      return Math.max(0, endMinutes - startMinutes) / 60;
+    }
+
+    function lessonPay(lesson) {
+      const student = getStudent(lesson.studentId);
+      if (!student) return 0;
+      return lessonDurationHours(lesson) * Number(student.rate);
+    }
+
+    function monthLessons() {
+      const month = getSelectedMonth();
+      return state.lessons.filter(lesson => lesson.date.startsWith(month));
+    }
+
+    function studentMonthStats(studentId) {
+      const lessons = monthLessons().filter(lesson => lesson.studentId === studentId);
+      return {
+        count: lessons.length,
+        hours: lessons.reduce((sum, lesson) => sum + lessonDurationHours(lesson), 0),
+        pay: lessons.reduce((sum, lesson) => sum + lessonPay(lesson), 0)
+      };
+    }
+
+    function renderStudentOptions() {
+      const select = document.getElementById("lessonStudent");
+      select.innerHTML = "";
+
+      if (state.students.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "請先新增學生";
+        select.appendChild(option);
+        return;
+      }
+
+      state.students.forEach(student => {
+        const option = document.createElement("option");
+        option.value = student.id;
+        option.textContent = `${student.name}（時薪 ${money(student.rate)}）`;
+        select.appendChild(option);
+      });
+    }
+
+    function renderStudents() {
+      const list = document.getElementById("studentList");
+      list.innerHTML = "";
+
+      if (state.students.length === 0) {
+        list.innerHTML = '<div class="empty">目前還沒有學生<br>先新增第一位學生吧！</div>';
+        renderStudentOptions();
+        return;
+      }
+
+      state.students.forEach(student => {
+        const stats = studentMonthStats(student.id);
+        const item = document.createElement("div");
+        item.className = "student-item";
+        item.innerHTML = `
+          <div class="student-item-top">
+            <div>
+              <div class="student-name">${escapeHtml(student.name)}</div>
+              <div class="student-rate">時薪 ${money(student.rate)}</div>
+            </div>
+            <button class="danger small" data-delete-student="${student.id}">刪除</button>
+          </div>
+          <div class="student-total">
+            本月 ${stats.count} 堂・${stats.hours.toFixed(2)} 小時・${money(stats.pay)}
+          </div>
+        `;
+        list.appendChild(item);
+      });
+
+      list.querySelectorAll("[data-delete-student]").forEach(button => {
+        button.addEventListener("click", () => {
+          const id = button.dataset.deleteStudent;
+          const student = getStudent(id);
+          if (!student) return;
+
+          const relatedLessons = state.lessons.filter(lesson => lesson.studentId === id).length;
+          const message = relatedLessons
+            ? `刪除「${student.name}」也會一併刪除他的 ${relatedLessons} 筆課程紀錄，確定嗎？`
+            : `確定要刪除「${student.name}」嗎？`;
+
+          if (!confirm(message)) return;
+
+          state.students = state.students.filter(student => student.id !== id);
+          state.lessons = state.lessons.filter(lesson => lesson.studentId !== id);
+          saveState();
+          renderAll();
+        });
+      });
+
+      renderStudentOptions();
+    }
+
+    function renderCalendar() {
+      const calendar = document.getElementById("calendar");
+      calendar.innerHTML = "";
+
+      ["日", "一", "二", "三", "四", "五", "六"].forEach(day => {
+        const el = document.createElement("div");
+        el.className = "weekday";
+        el.textContent = day;
+        calendar.appendChild(el);
+      });
+
+      const [year, month] = getSelectedMonth().split("-").map(Number);
+      const firstDay = new Date(year, month - 1, 1).getDay();
+      const daysInMonth = new Date(year, month, 0).getDate();
+
+      document.getElementById("calendarTitle").textContent = `${year} 年 ${month} 月課程`;
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement("div");
+        empty.className = "day empty-day";
+        calendar.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = `${year}-${pad(month)}-${pad(day)}`;
+        const lessons = state.lessons
+          .filter(lesson => lesson.date === date)
+          .sort((a, b) => a.start.localeCompare(b.start));
+
+        const cell = document.createElement("div");
+        cell.className = "day";
+
+        let chips = lessons.slice(0, 3).map(lesson => {
+          const student = getStudent(lesson.studentId);
+          if (!student) return "";
+          return `<div class="lesson-chip">${escapeHtml(student.name)}<br>${lesson.start}–${lesson.end}</div>`;
+        }).join("");
+
+        if (lessons.length > 3) {
+          chips += `<div class="lesson-count">另外 ${lessons.length - 3} 筆</div>`;
+        }
+
+        cell.innerHTML = `
+          <div class="day-number">${day}</div>
+          ${chips}
+        `;
+
+        cell.addEventListener("click", () => openLessonModal(date));
+        calendar.appendChild(cell);
+      }
+    }
+
+    function renderSummary() {
+      const wrap = document.getElementById("summaryWrap");
+      const activeStudents = state.students
+        .map(student => ({ student, stats: studentMonthStats(student.id) }))
+        .filter(item => item.stats.count > 0);
+
+      const total = activeStudents.reduce((sum, item) => sum + item.stats.pay, 0);
+      document.getElementById("monthTotal").textContent = money(total);
+
+      if (activeStudents.length === 0) {
+        wrap.innerHTML = '<div class="empty">這個月份還沒有上課紀錄</div>';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>學生</th>
+              <th>堂數</th>
+              <th>時數</th>
+              <th>應付薪資</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${activeStudents.map(({ student, stats }) => `
+              <tr>
+                <td>${escapeHtml(student.name)}</td>
+                <td>${stats.count}</td>
+                <td>${stats.hours.toFixed(2)} 小時</td>
+                <td><strong>${money(stats.pay)}</strong></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderAll() {
+      renderStudents();
+      renderCalendar();
+      renderSummary();
+      if (selectedDate) renderDayLessons();
+    }
+
+    function addStudent() {
+      const nameInput = document.getElementById("studentName");
+      const rateInput = document.getElementById("studentRate");
+      const name = nameInput.value.trim();
+      const rate = Number(rateInput.value);
+
+      if (!name) {
+        alert("請輸入學生名稱");
+        nameInput.focus();
+        return;
+      }
+
+      if (!Number.isFinite(rate) || rate <= 0) {
+        alert("請輸入正確的時薪");
+        rateInput.focus();
+        return;
+      }
+
+      state.students.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+        name,
+        rate
+      });
+
+      nameInput.value = "";
+      rateInput.value = "";
+      saveState();
+      renderAll();
+    }
+
+    function openLessonModal(date) {
+      selectedDate = date;
+      document.getElementById("selectedDateText").textContent = date;
+      renderStudentOptions();
+      renderDayLessons();
+      document.getElementById("lessonModal").classList.add("show");
+    }
+
+    function closeLessonModal() {
+      document.getElementById("lessonModal").classList.remove("show");
+    }
+
+    function renderDayLessons() {
+      const list = document.getElementById("dayLessonList");
+      const lessons = state.lessons
+        .filter(lesson => lesson.date === selectedDate)
+        .sort((a, b) => a.start.localeCompare(b.start));
+
+      if (lessons.length === 0) {
+        list.innerHTML = '<div class="empty">這一天還沒有課程</div>';
+        return;
+      }
+
+      list.innerHTML = lessons.map(lesson => {
+        const student = getStudent(lesson.studentId);
+        if (!student) return "";
+
+        const hours = lessonDurationHours(lesson);
+        return `
+          <div class="lesson-row">
+            <div class="lesson-row-top">
+              <strong>${escapeHtml(student.name)}</strong>
+              <button class="danger small" data-delete-lesson="${lesson.id}">刪除</button>
+            </div>
+            <div class="lesson-detail">
+              ${lesson.start}–${lesson.end}・${hours.toFixed(2)} 小時・${money(lessonPay(lesson))}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      list.querySelectorAll("[data-delete-lesson]").forEach(button => {
+        button.addEventListener("click", () => {
+          const id = button.dataset.deleteLesson;
+          state.lessons = state.lessons.filter(lesson => lesson.id !== id);
+          saveState();
+          renderAll();
+        });
+      });
+    }
+
+    function saveLesson() {
+      if (state.students.length === 0) {
+        alert("請先新增學生");
+        return;
+      }
+
+      const studentId = document.getElementById("lessonStudent").value;
+      const start = document.getElementById("startTime").value;
+      const end = document.getElementById("endTime").value;
+
+      if (!studentId || !start || !end) {
+        alert("請完整選擇學生與時間");
+        return;
+      }
+
+      if (end <= start) {
+        alert("下課時間必須晚於上課時間");
+        return;
+      }
+
+      state.lessons.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+        studentId,
+        date: selectedDate,
+        start,
+        end
+      });
+
+      saveState();
+      renderAll();
+    }
+
+    function changeMonth(offset) {
+      const [year, month] = getSelectedMonth().split("-").map(Number);
+      const date = new Date(year, month - 1 + offset, 1);
+      document.getElementById("monthPicker").value =
+        `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+      renderAll();
+    }
+
+    function clearCurrentMonth() {
+      const month = getSelectedMonth();
+      const count = state.lessons.filter(lesson => lesson.date.startsWith(month)).length;
+
+      if (count === 0) {
+        alert("這個月份沒有課程紀錄");
+        return;
+      }
+
+      if (!confirm(`確定要刪除 ${month} 的全部 ${count} 筆課程紀錄嗎？`)) return;
+
+      state.lessons = state.lessons.filter(lesson => !lesson.date.startsWith(month));
+      saveState();
+      renderAll();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    document.getElementById("addStudent").addEventListener("click", addStudent);
+    document.getElementById("studentRate").addEventListener("keydown", event => {
+      if (event.key === "Enter") addStudent();
+    });
+    document.getElementById("monthPicker").addEventListener("change", renderAll);
+    document.getElementById("prevMonth").addEventListener("click", () => changeMonth(-1));
+    document.getElementById("nextMonth").addEventListener("click", () => changeMonth(1));
+    document.getElementById("clearMonth").addEventListener("click", clearCurrentMonth);
+    document.getElementById("closeModal").addEventListener("click", closeLessonModal);
+    document.getElementById("saveLesson").addEventListener("click", saveLesson);
+
+    document.getElementById("lessonModal").addEventListener("click", event => {
+      if (event.target.id === "lessonModal") closeLessonModal();
+    });
+
+    loadState();
+    document.getElementById("monthPicker").value = todayMonth();
+    renderAll();
+  </script>
+</body>
+</html>
