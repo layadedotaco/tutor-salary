@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>更新家教薪資 Widget</title>
+  <style>
+    :root {
+      --bg1: #f4f1ff;
+      --bg2: #fff5f8;
+      --card: rgba(255,255,255,.96);
+      --text: #25233a;
+      --muted: #74718a;
+      --primary: #7357d8;
+      --border: #e8e4f1;
+      --success: #168967;
+      --danger: #d9465f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+
+    .card {
+      width: min(460px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    h1 { margin: 0 0 10px; font-size: 25px; }
+    p { margin: 8px 0; color: var(--muted); line-height: 1.6; }
+    .status { margin-top: 18px; font-weight: 800; color: var(--success); }
+
+    button {
+      width: 100%;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-size: 16px;
+      font-weight: 800;
+      color: white;
+      background: var(--primary);
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #f1eff5;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>📚 更新家教薪資 Widget</h1>
+    <p id="message">正在讀取這個月的家教紀錄…</p>
+    <div class="status" id="status"></div>
+    <button id="updateBtn">更新桌面 Widget</button>
+    <button id="backBtn" class="secondary">回家教薪資網頁</button>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "tutorSalaryCalculatorV2";
+    const SCRIPT_NAME = "家教薪資 Widget";
+
+    const pad = value => String(value).padStart(2, "0");
+
+    function currentMonth() {
+      const now = new Date();
+      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { students: [], lessons: [] };
+
+      try {
+        const parsed = JSON.parse(raw);
+        return {
+          students: Array.isArray(parsed.students) ? parsed.students : [],
+          lessons: Array.isArray(parsed.lessons) ? parsed.lessons : []
+        };
+      } catch (error) {
+        return { students: [], lessons: [] };
+      }
+    }
+
+    function durationHours(lesson) {
+      const [sh, sm] = lesson.start.split(":").map(Number);
+      const [eh, em] = lesson.end.split(":").map(Number);
+      return Math.max(0, (eh * 60 + em) - (sh * 60 + sm)) / 60;
+    }
+
+    function buildPayload() {
+      const state = loadState();
+      const month = currentMonth();
+      const monthLessons = state.lessons.filter(
+        lesson => lesson.date && lesson.date.startsWith(month)
+      );
+
+      const students = state.students
+        .map(student => {
+          const lessons = monthLessons.filter(
+            lesson => lesson.studentId === student.id
+          );
+
+          const hours = lessons.reduce(
+            (sum, lesson) => sum + durationHours(lesson),
+            0
+          );
+
+          const pay = hours * Number(student.rate || 0);
+
+          return {
+            name: student.name,
+            count: lessons.length,
+            hours: Number(hours.toFixed(2)),
+            pay: Math.round(pay)
+          };
+        })
+        .filter(student => student.count > 0);
+
+      return {
+        month,
+        students,
+        total: students.reduce(
+          (sum, student) => sum + student.pay,
+          0
+        ),
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function updatePreview() {
+      const payload = buildPayload();
+      const message = document.getElementById("message");
+      const status = document.getElementById("status");
+
+      if (payload.students.length === 0) {
+        message.textContent = "這個月還沒有找到上課紀錄。";
+        status.textContent = "請先回家教薪資網頁登記課程。";
+        return;
+      }
+
+      const [year, month] = payload.month.split("-");
+      message.textContent =
+        `${year} 年 ${Number(month)} 月共有 ${payload.students.length} 位學生有上課紀錄。`;
+
+      status.textContent =
+        `目前本月合計 $${payload.total.toLocaleString("zh-TW")}`;
+    }
+
+    function sendToScriptable() {
+      const payload = buildPayload();
+
+      if (payload.students.length === 0) {
+        alert("這個月還沒有任何上課紀錄");
+        return;
+      }
+
+      const data = encodeURIComponent(JSON.stringify(payload));
+      const script = encodeURIComponent(SCRIPT_NAME);
+
+      window.location.href =
+        `scriptable:///run/${script}?data=${data}`;
+    }
+
+    document
+      .getElementById("updateBtn")
+      .addEventListener("click", sendToScriptable);
+
+    document
+      .getElementById("backBtn")
+      .addEventListener("click", () => {
+        window.location.href = "./";
+      });
+
+    updatePreview();
+  </script>
+</body>
+</html>
